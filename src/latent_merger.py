@@ -110,6 +110,7 @@ def main(args=None):
 
     # Read the input file as a pandas dataframe
     df = pd.read_csv(args.input)
+
     # Check if it has the required fields: relative_path, latitude [deg], longitude [deg]
     if not all(x in df.columns for x in ['relative_path', 'latitude [deg]', 'longitude [deg]']):
         print ('Input file: [' + args.input + '] does not have the required fields: relative_path, latitude [deg], longitude [deg].')
@@ -129,7 +130,59 @@ def main(args=None):
     df_latent = df_latent.filter(regex='latent_')
     # Print the total number of entries in the latent file. Also print the number of latent columns
     print ('Latent file has ' + str(len(df_latent)) + ' entries and ' + str(len(df_latent.columns)) + ' columns.')
-    
+
+    # Check if the number of entries in the input and latent files match
+    if len(df) != len(df_latent):
+        print ('Error: input and latent files do not have the same number of entries.')
+        exit()
+
+    # Create the dataframe that will contain the merged data
+    df_merged = pd.DataFrame()
+
+    # Check if the --slim flag was provided. If so, only the relative_path, latitude [deg], longitude [deg] from the input file will be added
+    if args.slim:
+        df_merged = df[['relative_path', 'latitude [deg]', 'longitude [deg]']]
+        # Print a message informing that only the relative_path, latitude [deg], longitude [deg] fields will be added because of the --slim flag
+        print ('Flag --slim used. Only the relative_path, latitude [deg], longitude [deg] fields will be exported from the input file.')
+    else:
+        df_merged = df
+
+    # From the original dataframe, get the index of the latitude and longitude columns
+    lat_index = df.columns.get_loc('latitude [deg]')
+    lon_index = df.columns.get_loc('longitude [deg]')
+
+    # Check if the --utm flag was provided. If so, UTM coordinates will be generated from the input latitude and longitude
+    if args.utm:
+        # Print a message informing that UTM coordinates will be generated from the input latitude and longitude
+        print ('Flag --utm used. UTM coordinates will be generated from the input latitude and longitude.')
+        # Let's determine the UTM zone from the input longitude. Sample first entry
+        lon = df['longitude [deg]'][0]
+        # Determine the UTM zone
+        utm_zone = int((lon + 180) / 6) + 1
+        # Print the UTM zone
+        print ('UTM zone: ' + str(utm_zone))
+        # Create the UTM projection as a new object
+        utm = pyproj.Proj(proj='utm', zone=utm_zone, ellps='WGS84', datum='WGS84')
+        # For each entry in the dataframe, convert the latitude and longitude to UTM coordinates and add them to the dataframe
+        # The UTM coluns are: "easting_utm", "northing_utm"
+        easting, northing = utm(df['longitude [deg]'].values, df['latitude [deg]'].values)
+
+        # Append the new columns to the dataframe df_merged (they are numpy.ndarrays)
+        df_merged['northing_utm [m]'] = northing.tolist()
+        df_merged['easting_utm [m]'] = easting.tolist()
+
+    # Append the latent variables to the merged dataframe. Use only the fields starting with "latent_"
+    # First we filter the latent dataframe to only contain the fields starting with "latent_"
+    df_latent = df_latent.filter(regex='latent_')
+    df_merged = pd.concat([df_merged, df_latent], axis=1)
+
+    # Print the total number of entries in the merged dataframe. Also print the number of columns
+    # It should match those from the input file
+    print ('Merged dataframe has ' + str(len(df_merged)) + ' entries and ' + str(len(df_merged.columns)) + ' columns.')
+
+    # Write the merged dataframe to a csv file
+    df_merged.to_csv(args.output, index=False)
+
 # Add main as the entry point for the script
 if __name__ == "__main__":
     main()
