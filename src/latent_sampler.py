@@ -1,21 +1,36 @@
 #latent sampler
 # import parser module
-import argparse as par
+import argparse
+import pandas as pd
+import numpy as np
+import os 
+import sys
+import signal
+
+# Add handler for the SIGINT signal
+def signal_handler(sig, frame):
+    print('You pressed Ctrl+C!')
+#    sys.exit(0)
 
 
 # Create the parser and add arguments
 def main(args=None):
-    description_str = "[latents_toolbox] Tool to calculate and append the UTM coordinates to a CSV file containing georeferenced entries."
+
+    # # Register the signal handler
+    # signal.signal(signal.SIGINT, signal_handler)
+
+    description_str = \
+        "[latents_toolbox] Tool to sample rows from a SOURCE to append to the matching entry in the TARGET layer. Matching algorithms are based on the UTM georef information"
     formatter = lambda prog: argparse.HelpFormatter(prog, width=120)  # noqa: E731
     parser = argparse.ArgumentParser(description=description_str,
                                      formatter_class=formatter)
 
     # input #########################
     parser.add_argument(
-        "-i",
+        "-s",
         "--source",
         type=str,
-        help="CSV containing georeferenced entries to be matched against target entries using distance based criteria"
+        help="CSV containing the SOURCE of georeferenced entries to be matched against target entries using distance based criteria"
     )
     # latent
     parser.add_argument(
@@ -23,24 +38,145 @@ def main(args=None):
         "--target",
         type=str,
         # default=None,
-        help="CSV containing the target georeferenced entries to be matched against source entries using distance based criteria"
+        help="CSV containing the TARGET of georeferenced entries to be matched against source entries using distance based criteria"
     )
     parser.add_argument(
         "-k",
         "--key",
-        # default='key',
+        # default=None,
         type=str,
-        help="Keyword that defines the field (columns) from source that will be appended to target."
+        help="Keyword that defines the field (columns) from source that will be appended to target. If None, then all the fields wil be appended."
     )
     # output #########################
     parser.add_argument(
         "-o",
         "--output",
-        default='merged_latents.csv',
+        default='sampled_latents.csv',
         type=str,
-        help="File containing a coopy of the "
+        help="File containing a copy of the TARGET layer with the sampled (matching) entries from the SOURCE layer appended to it."
+    )
+
+    # distance #########################
+    parser.add_argument(
+        "-d",
+        "--distance",
+        default=-1.0,
+        type=float,
+        help="Distance threshold that defines the maximum distance between the SOURCE and TARGET entries to be considered a match. Set to negative value if you do not want a limit."
     )
 
     # parse arguments
     args = parser.parse_args(args)
     print (args)
+
+    # Check if the provided SOURCE file exists
+    # If the file does not exist, the script will exit
+    try:
+        with open(args.source, 'r') as f:
+            print ("SOURCE file found")
+    except IOError:
+        print ("SOURCE file not found")
+        exit()
+    
+    # Check if the provided file exists
+    # If the file does not exist, the script will exit
+    try:
+        with open(args.target, 'r') as f:
+            print ("TARGET file found")
+    except IOError:
+        print ("TARGET file not found")
+        exit()
+    
+    # Check if the output file exists, print a warning message and continue
+    if os.path.isfile(args.output):
+        print ('Provided output file: [' + args.output + '] already exists. Overwriting...')
+
+    # Read the input SOURCE file as a pandas dataframe
+    df_source = pd.read_csv(args.source)
+
+    # Read the input TARGET file as a pandas dataframe
+    df_target = pd.read_csv(args.target)
+
+    # Check if the provided key exists in the SOURCE file
+    if args.key is not None:
+        if args.key not in df_source.columns:
+            print ("Provided key: [" + args.key + "] not found in SOURCE file.")
+            exit()
+        else:
+            print ("Provided key: [" + args.key + "] found in SOURCE file.")
+
+    # CHeck if the SOURCE dataframe contains the UTM fields: 'northing_utm [m]' and 'easting_utm [m]'
+    # We could calculate them, but for now we will assume that they are already there. External tools to convert to UTM is already provided twice
+    if 'northing_utm [m]' not in df_source.columns:
+        print ("SOURCE file does not contain the northing_utm [m] field.")
+        exit()
+    if 'easting_utm [m]' not in df_source.columns:
+        print ("SOURCE file does not contain the easting_utm [m] field.")
+        exit()
+
+    # Check if the TARGET dataframe contains the UTM fields: 'northing_utm [m]' and 'easting_utm [m]'
+    if 'northing_utm [m]' not in df_target.columns:
+        print ("TARGET file does not contain the northing_utm [m] field.")
+        exit()
+    if 'easting_utm [m]' not in df_target.columns:
+        print ("TARGET file does not contain the easting_utm [m] field.")
+        exit()
+    
+    # The sampler algorithm (for now) consists in the closest match using the euclidean distance between the UTM coordinates
+    # The distance parameter is used to filter out the matches that are too far away. If distance < 0.0 then no filtering is applied
+    # The algorithm will iterate over the TARGET entries and find the closest match in the SOURCE entries. The mapping is unidirectional so the direction matters
+    # Then, append the SOURCE entry to the TARGET entry. If the key is provided, then only the fields that match the key will be appended. If the key is None, then all the fields will be appended
+
+    # Create a new dataframe to store the results
+    df_results = pd.DataFrame(columns=df_target.columns)
+    # Iterate over the TARGET entries
+    try:
+        for index, row in df_target.iterrows():
+            # Print the number of the current entry being processed
+            # print ("Processing TARGET entry: " + str(index))
+            # Calculate the euclidean distance between the current TARGET entry and all the SOURCE entries
+            df_source['distance'] = np.sqrt((df_source['northing_utm [m]'] - row['northing_utm [m]'])**2 + (df_source['easting_utm [m]'] - row['easting_utm [m]'])**2)
+            # Sort the SOURCE entries by distance
+            df_source = df_source.sort_values(by=['distance'])
+            # Get the first entry (closest match)
+            closest_match = df_source.iloc[0]
+            # If the distance is less than the provided threshold, then append the closest match to the TARGET entry
+            # If there is not match, then we skip the entry
+            if closest_match['distance'] < args.distance or args.distance < 0.0:
+                # Inform we found a match
+                print ("Match found for TARGET entry: " + str(index))
+                 # # Insert current target entry to the results dataframe
+                # df_results = df_results.append(row, ignore_index=True)
+ 
+                # If the key is provided, then only the fields that match the key will be appended. If the key is None, then all the fields will be appended
+                if args.key is not None:
+                    print ("Appending fields that match the key: " + args.key + " from SOURCE to TARGET")
+                    # Get the fields that match the key
+                    fields_to_append = df_source.filter(regex=args.key).columns
+                    for field in fields_to_append:
+                        row[field] = closest_match[field]
+                else:
+                    print ("Appending all fields from SOURCE to TARGET")
+                    # Append all the fields from SOURCE to the TARGET entry prepending the field name with the "source_"
+                    # This is done to avoid name collisions 
+                    for field in df_source.columns:
+                        if field != 'distance':
+                            row['source_' + field] = closest_match[field]
+                    # Add a new field to the TARGET entry with the distance between the TARGET and SOURCE entries
+                    row['distance'] = closest_match['distance']
+                # Append the TARGET entry to the results dataframe
+                df_results = df_results.append(row, ignore_index=True)
+            else:
+                print ("No match found for TARGET entry: " + str(index))
+
+        # Interrupt the execution if the SIGNAL was received
+    except KeyboardInterrupt:
+        print("Search interrupted by user (CTRL + C)")
+
+    # Save the results dataframe to the provided output file
+    print ("Saving results to: " + args.output)
+    df_results.to_csv(args.output, index=False)
+
+# Add main as the entry point for the script
+if __name__ == "__main__":
+    main()

@@ -181,7 +181,7 @@ def main(args=None):
     print ('Merged dataframe has ' + str(len(df_merged)) + ' entries and ' + str(len(df_merged.columns)) + ' columns.')
 
     print ('Writing merged dataframe to file: ' + args.output)
-    # Write the merged dataframe to a csv file
+    # Write the merged dataframe to a csv file``
     df_merged.to_csv(args.output, index=False)
 
 # Add main as the entry point for the script
