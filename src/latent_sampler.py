@@ -184,6 +184,9 @@ def main(args=None):
 
                 for field in fields_to_append:
                     row['source_' + field] = closest_match[field]
+                
+                # Add the 'distance' to the 'row' dataframe
+                row['match_distance'] = closest_match['distance']
 
 
                 # Append the TARGET entry to the results dataframe
@@ -198,6 +201,10 @@ def main(args=None):
                     # If the key is provided, then only the fields that match the key will be appended. If the key is None, then all the fields will be appended
                     for field in fields_to_append:
                         row['source_' + field] = match[field]
+
+                    # Add the 'distance' to the 'row' dataframe
+                    row['match_distance'] = match['distance']
+
                     # Append the TARGET entry to the results dataframe
                     df_results = pd.concat([df_results, row.to_frame().T], ignore_index=True)
 
