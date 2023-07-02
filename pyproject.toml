@@ -1,0 +1,54 @@
+# pyproject.toml
+# PEP-518 compliant build system
+# https://www.python.org/dev/peps/pep-0518/
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Prpject related information
+[project]
+name = "latent_toolbox"
+version = "0.0.1"
+authors = ["Jose Cappelletto", email="j.cappelletto@soton.ac.uk" ]
+description = "A toolbox for manipulation, sampling and visualization of latent representations of georefereced data."
+readme = "README.md"
+license = "GPLV3"
+keywords = "latent, georeferenced, data, visualization, sampling, manipulation"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "pyproj",
+]
+
+# setuptools related information (package location for our src-layout)
+[tools.setuptools.find_packages]
+where = "src"
+
+[tools.setuptools.sdist]
+formats = ["gztar"]
+
+# Define scripts entry points (console_scripts)
+[tools.setuptools.entry_points]
+console_scripts = [
+    "latent_sampler = latent_sampler.__main__:main",
+    "latent_merger = latent_merger.__main__:main",
+]
+
+# TODO:
+# Add plotting tools (plot_latents)
+# Add plot_afe_train results
+
+# Finish integration for
+# Modules:
+# confusion_matrix.py
+# latent_toolbox (git)
+# utm_generator // plot_latents.m
+# plot_train_lga
+

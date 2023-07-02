@@ -9,6 +9,8 @@ import pyproj
 import pandas as pd
 
 
+#TODO: Refactor to add main function as entrypoint (required for pyproject.toml console script installation)
+
 # Retrieve the input filename from the command line
 if len(sys.argv) < 2:
     print('Please provide the input filename.')
