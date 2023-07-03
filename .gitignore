@@ -1,1 +1,11 @@
 data/*
+
+# Python specific git ignores
+*.pyc
+*.pyo
+*.pyd
+*.egg-info*
+dist/*
+build/*
+__pycache__/*
+

@@ -10,14 +10,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "latent_toolbox"
 version = "0.0.1"
-authors = ["Jose Cappelletto", email="j.cappelletto@soton.ac.uk" ]
+authors = [ {name = "Jose Cappelletto", email = "j.cappelletto@soton.ac.uk" } ]
 description = "A toolbox for manipulation, sampling and visualization of latent representations of georefereced data."
 readme = "README.md"
-license = "GPLV3"
-keywords = "latent, georeferenced, data, visualization, sampling, manipulation"
+# license = [{text = "GPLv3", file = "LICENSE"}]
+keywords = ["latent, georeferenced, data, visualization, sampling, manipulation"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -35,11 +34,9 @@ where = "src"
 formats = ["gztar"]
 
 # Define scripts entry points (console_scripts)
-[tools.setuptools.entry_points]
-console_scripts = [
-    "latent_sampler = latent_sampler.__main__:main",
-    "latent_merger = latent_merger.__main__:main",
-]
+[project.scripts]
+latent_merger = "latent_merger:main"
+latent_sampler = "latent_sampler:main"
 
 # TODO:
 # Add plotting tools (plot_latents)
