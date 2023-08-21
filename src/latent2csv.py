@@ -29,7 +29,7 @@ def main(args=None):
 
     # Check if the output file exists, print a warning message and continue
     if os.path.isfile(output_file):
-        print ('Provided output file: [' + output_file + '] already exists. Overwriting...')
+        print ('Provided output file [' + output_file + '] already exists. Overwriting...')
 
     latents_np = np.load(input_file)
     latents_dim = latents_np.shape[1]
@@ -41,6 +41,7 @@ def main(args=None):
     header = ["latent_" + str(i) for i in range(latents_dim)]
     df = pd.DataFrame(latents_np, columns=header)
     df.to_csv(output_file, index=False)
+    print ("Saved to [", output_file, "] ...done!")
 
 if __name__ == "__main__":
     main()
