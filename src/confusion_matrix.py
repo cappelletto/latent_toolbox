@@ -16,7 +16,8 @@ def main(args=None):
     parser.add_argument("--target", "-t", type=str, default="target_", help="Prefix for the target labels (ground truth)")
     # Add option to define predicted labels, default pred_
     parser.add_argument("--pred", "-p", type=str, default="pred_", help="Prefix for the predicted labels (predictions)")
-
+    # Add flag to indicate if we want to show the plot
+    parser.add_argument("--show", "-s", action="store_true", help="Flag to indicate if we want to show the plot")
     args = parser.parse_args()
 
     # Read CSV file
@@ -115,15 +116,27 @@ def main(args=None):
     plt.xlabel('Target')
     # Set the y-axis label
     plt.ylabel('Predicted')
-    # Show the figure
-    plt.show()
+    # Check if we want to show the plot
+    if args.show:
+        plt.show()
     # Save the figure
     # Output filename is optional, check if it was provided
     if args.output is None:
         # If not provided, then use the input filename with .png extension
         output_file = os.path.splitext(filename)[0]
+        # remove any preceding path from the filename
+        output_file = os.path.basename(output_file)
     else:
         output_file = args.output
+
+    # print current directory
+    print("Current directory: ", os.getcwd())
+
+    # Use the current directory as output directory
+    output_file = os.path.join(os.getcwd(), output_file)
+    # print output file path
+    print("Exporting to output file path (prefix): ", output_file)
+
     # save as PNG
     fig.savefig(output_file + '.png', bbox_inches='tight')
     # save as SVG
