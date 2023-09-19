@@ -7,27 +7,59 @@ import matplotlib.pyplot as plt
 import os
 import argparse
 
+
 def main(args=None):
-    parser = argparse.ArgumentParser(description="Calculate and plot the confusion matrix from a CSV file containing the predictions and targets")
-    parser.add_argument("--input", "-i", type=str, required=True, help="Path to the input CSV file with the predictions and targets")
+    parser = argparse.ArgumentParser(
+        description="Calculate and plot the confusion matrix from a CSV file containing the predictions and targets"
+    )
+    parser.add_argument(
+        "--input",
+        "-i",
+        type=str,
+        required=True,
+        help="Path to the input CSV file with the predictions and targets",
+    )
     # Output filename is optional
-    parser.add_argument("--output", "-o", type=str, default=None, help="Path to the output file with the confusion matrix image")
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        default=None,
+        help="Path to the output file with the confusion matrix image",
+    )
     # Add option to define target labels, default target_
-    parser.add_argument("--target", "-t", type=str, default="target_", help="Prefix for the target labels (ground truth)")
+    parser.add_argument(
+        "--target",
+        "-t",
+        type=str,
+        default="target_",
+        help="Prefix for the target labels (ground truth)",
+    )
     # Add option to define predicted labels, default pred_
-    parser.add_argument("--pred", "-p", type=str, default="pred_", help="Prefix for the predicted labels (predictions)")
+    parser.add_argument(
+        "--pred",
+        "-p",
+        type=str,
+        default="pred_",
+        help="Prefix for the predicted labels (predictions)",
+    )
     # Add flag to indicate if we want to show the plot
-    parser.add_argument("--show", "-s", action="store_true", help="Flag to indicate if we want to show the plot")
+    parser.add_argument(
+        "--show",
+        "-s",
+        action="store_true",
+        help="Flag to indicate if we want to show the plot",
+    )
     args = parser.parse_args()
 
     # Read CSV file
     # Check if the input file exists
     # If the file does not exist, the script will exit
     try:
-        with open(args.input, 'r') as f:
+        with open(args.input, "r") as f:
             pass
     except FileNotFoundError as e:
-        print ("Provided input file: [" + args.input + "] not found.")
+        print("Provided input file: [" + args.input + "] not found.")
         exit()
     filename = args.input
     df = pd.read_csv(filename)
@@ -68,16 +100,22 @@ def main(args=None):
         confusion_matrix[target_label, pred_label] += 1
 
         # Update the confusion matrix, using the raw values
-        confusion_matrix_raw += np.outer(df.iloc[i][target_labels].to_numpy(), df.iloc[i][pred_labels].to_numpy())
+        confusion_matrix_raw += np.outer(
+            df.iloc[i][target_labels].to_numpy(), df.iloc[i][pred_labels].to_numpy()
+        )
 
         # Update the Brier score, using the argmax (one-hot encoding)
         brier_score_onehot += (target_label - pred_label) ** 2
         # Update the Brier score, using the raw values
-        brier_score_raw += (df.iloc[i][target_labels].to_numpy() - df.iloc[i][pred_labels].to_numpy()) ** 2
+        brier_score_raw += (
+            df.iloc[i][target_labels].to_numpy() - df.iloc[i][pred_labels].to_numpy()
+        ) ** 2
 
     # Normalize the confusion matrices
     confusion_matrix = confusion_matrix / confusion_matrix.sum(axis=1)[:, np.newaxis]
-    confusion_matrix_raw = confusion_matrix_raw / confusion_matrix_raw.sum(axis=1)[:, np.newaxis]
+    confusion_matrix_raw = (
+        confusion_matrix_raw / confusion_matrix_raw.sum(axis=1)[:, np.newaxis]
+    )
     # Print the content of the confusion matrix
     print(confusion_matrix)
     print(confusion_matrix_raw)
@@ -99,23 +137,27 @@ def main(args=None):
     fig.set_size_inches(12, 8)
     ax = fig.add_subplot(111)
     # Plot the confusion matrix
-    cax = ax.matshow(confusion_matrix)
-    fig.colorbar(cax)
+    cax = ax.matshow(confusion_matrix, cmap=plt.cm.inferno)
+    # set the colorbar, and the ticks values every 0.25
+    fig.colorbar(cax, ticks=[0, 0.25, 0.5, 0.75, 1])
+    # set the colorbar limits to 0.0 and 1.0
+    cax.set_clim(0.0, 1.0) 
+
     # Set the labels for the x-axis
-    ax.set_xticklabels([''] + target_labels)
+    ax.set_xticklabels([""] + target_labels)
     # Set the labels for the y-axis
-    ax.set_yticklabels([''] + pred_labels)
+    ax.set_yticklabels([""] + pred_labels)
     # Rotate the labels for the x-axis
     plt.setp(ax.get_xticklabels(), rotation=45, ha="left", rotation_mode="anchor")
     # Set the title
     # plt.title('Confusion matrix')
-    plt.title('Confusion matrix for ' + filename)
+    plt.title("Confusion matrix for " + filename)
     # Add subtitle with the Brier scores
     # plt.suptitle('Brier score (one-hot):' + str(brier_score_onehot) + '\n Brier score (raw): ' + str(brier_score_raw) + '\n Confusion matrix raw:' + str(confusion_matrix_raw))
     # Set the x-axis label
-    plt.xlabel('Target')
+    plt.xlabel("Target")
     # Set the y-axis label
-    plt.ylabel('Predicted')
+    plt.ylabel("Predicted")
     # Check if we want to show the plot
     if args.show:
         plt.show()
@@ -129,19 +171,17 @@ def main(args=None):
     else:
         output_file = args.output
 
-    # print current directory
-    print("Current directory: ", os.getcwd())
-
     # Use the current directory as output directory
     output_file = os.path.join(os.getcwd(), output_file)
     # print output file path
     print("Exporting to output file path (prefix): ", output_file)
 
     # save as PNG
-    fig.savefig(output_file + '.png', bbox_inches='tight')
+    fig.savefig(output_file + ".png", bbox_inches="tight")
     # save as SVG
-    fig.savefig(output_file + '.svg', bbox_inches='tight')
+    fig.savefig(output_file + ".svg", bbox_inches="tight")
 
+    print("\n------------------------\nExporting confusion matrix and scores to CSV---------------------")
     # Export the confusion matrix and the Brier score to CSV
     # Create a dataframe with the confusion matrix
     df_confusion_matrix = pd.DataFrame(confusion_matrix)
@@ -150,17 +190,40 @@ def main(args=None):
     # Add the predicted labels as index
     df_confusion_matrix.index = pred_labels
     # Save the dataframe to CSV
-    df_confusion_matrix.to_csv(output_file + '_confusion_matrix.csv')
+    df_confusion_matrix.to_csv(output_file + "_confusion_matrix.csv")
 
-    # Export the Briser score to CSV
-    # Create a dataframe with the Brier score
-    df_brier_score = pd.DataFrame([brier_score_onehot, brier_score_raw, accuracy])
+    # Export a summary of the scores: Brier score and accuracy
+    # The output CSV will be parsed by a batch script to generate a summary of the scores for all the experiments
+    # Here is a sample of the output CSV file:
+    # input_file, brier_score_onehot, brier_score_raw_label_0, brier_score_raw_label_1, ..., accuracy_label_0, accuracy_label_1, ...
+    # valid_mean_20m_ae_L15m_h16_1841.csv, 0.0, 0.0, 0.0, ..., 1.0, 1.0, ...
+
+    # Prepare the information to be saved to CSV. Note that we need to add the input filename
+    # The input filename is the basename of the input file, without the extension
+    # Get the basename of the input file
+    input_file = os.path.basename(filename)
+    # Remove the extension
+    input_file = os.path.splitext(input_file)[0]
+
+    # Create a dataframe with the input filename and the Brier score one-shot. The Brier score raw is a vector, we need to add each element as a column
+
+    # Create the output dataframe, appending as columns the input filename and the Brier score one-hot
+    df_scores = pd.DataFrame([[input_file, brier_score_onehot]])
+
     # Add the target labels as columns
-    df_brier_score.columns = ['Scores']
-    # Add the predicted labels as index
-    df_brier_score.index = ['brier_score_onehot', 'brier_score_raw', 'accuracy']
+    df_scores.columns = ["input_file", "brier_score_onehot"]
+
+    # Add the Brier score raw (each element is an individual column of the dataframe)
+    for i in range(num_classes):
+        df_scores["brier_score_raw_" + target_labels[i]] = brier_score_raw[i]
+
+    # Add the accuracy (each element is an individual column of the dataframe)
+    for i in range(num_classes):
+        df_scores["accuracy_" + target_labels[i]] = accuracy[i]
+
     # Save the dataframe to CSV
-    df_brier_score.to_csv(output_file + '_scores.csv')
+    df_scores.to_csv(output_file + "_scores.csv")
+
 
 if __name__ == "__main__":
     main()
