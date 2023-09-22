@@ -37,12 +37,14 @@ latent_sampler = "latent_sampler:main"
 latent2csv = "latent2csv:main"
 aglabels = "aglabels:main"
 calculate_metrics = "calculate_metrics:main"
+append_utm = "append_utm:main"
 # TODO:
 # Add plotting tools (plot_latents)
 # Add plot_afe_train results
+# Test MWE for append_utm
 
 # Finish integration for
 # Modules:
 
-# utm_generator // plot_latents.m >> needs a [main] module and cli compatible API
+# utm_generator // plot_latents.m >> needs a [main] module and cli compatible API       [WIP]
 # plot_train_lga // to improve for consumption of general types of model training
