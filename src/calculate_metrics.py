@@ -76,7 +76,7 @@ def main(args=None):
     print("Number of classes: ", num_classes)
     # Get the number of samples
     num_samples = len(df)
-    print("Number of samples: ", num_samples)
+    print("Number of samples (rows): ", num_samples)
 
     # We want to create a confusion matrix of size num_classes x num_classes
     # Initialize the confusion matrix
@@ -92,9 +92,9 @@ def main(args=None):
 
     # Iterate over the samples
     for i in range(num_samples):
-        # Get the target label
+        # Get the target label, in one-hot encoding
         target_label = df.iloc[i][target_labels].to_numpy().argmax()
-        # Get the predicted label
+        # Get the predicted label, in one-hot encoding
         pred_label = df.iloc[i][pred_labels].to_numpy().argmax()
         # Update the confusion matrix
         confusion_matrix[target_label, pred_label] += 1
@@ -104,9 +104,10 @@ def main(args=None):
             df.iloc[i][target_labels].to_numpy(), df.iloc[i][pred_labels].to_numpy()
         )
 
-        # Update the Brier score, using the argmax (one-hot encoding)
+        # Update the Brier score, using the argmax (one-hot encoding).
+        # Error will be 0 if the target and predicted labels are the same or 1 if they are different
         brier_score_onehot += (target_label - pred_label) ** 2
-        # Update the Brier score, using the raw values
+        # Update the Brier score, using the raw values. This is the MSE between the target and predicted labels
         brier_score_raw += (
             df.iloc[i][target_labels].to_numpy() - df.iloc[i][pred_labels].to_numpy()
         ) ** 2
@@ -123,7 +124,7 @@ def main(args=None):
     brier_score_raw /= num_samples
     # Print the Brier score
     print("Brier score (one-hot): ", brier_score_onehot)
-    print("Brier score (one-raw): ", brier_score_raw)
+    print("Brier score (raw-MSE): ", brier_score_raw)
 
     # Calculate the accuracy for each class
     accuracy = np.diag(confusion_matrix)
@@ -213,9 +214,9 @@ def main(args=None):
     # Add the target labels as columns
     df_scores.columns = ["input_file", "brier_score_onehot"]
 
-    # Add the Brier score raw (each element is an individual column of the dataframe)
+    # Add the Brier MSE raw value (each element is an individual column of the dataframe)
     for i in range(num_classes):
-        df_scores["brier_score_raw_" + target_labels[i]] = brier_score_raw[i]
+        df_scores["brier_mse_raw_" + target_labels[i]] = brier_score_raw[i]
 
     # Add the accuracy (each element is an individual column of the dataframe)
     for i in range(num_classes):

@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 # Prpject related information
 [project]
 name = "latent_toolbox"
-version = "0.1.2"
+version = "0.1.3"
 authors = [ {name = "Jose Cappelletto", email = "j.cappelletto@soton.ac.uk" } ]
 description = "A toolbox for manipulation, sampling and visualization of latent representations of georefereced data."
 readme = "README.md"
@@ -39,7 +39,7 @@ latent_merger = "latent_merger:main"
 latent_sampler = "latent_sampler:main"
 latent2csv = "latent2csv:main"
 aglabels = "aglabels:main"
-confusion_matrix = "confusion_matrix:main"
+calculate_metrics = "calculate_metrics:main"
 # TODO:
 # Add plotting tools (plot_latents)
 # Add plot_afe_train results
