@@ -92,7 +92,6 @@ def main(args=None):
 
     # Iterate over the samples
     for i in range(num_samples):
-        # Get the target label, in one-hot encoding
         target_label_index = df.iloc[i][target_labels].to_numpy().argmax()
         # Get the predicted label, in one-hot encoding
         pred_label_index = df.iloc[i][pred_labels].to_numpy().argmax()
@@ -100,9 +99,9 @@ def main(args=None):
         confusion_matrix[target_label_index, pred_label_index] += 1
 
         # Update the confusion matrix, using the raw values
-        confusion_matrix_raw += np.outer(
-            df.iloc[i][target_labels].to_numpy(), df.iloc[i][pred_labels].to_numpy()
-        )
+        # confusion_matrix_raw += np.outer(
+        #     df.iloc[i][target_labels].to_numpy(), df.iloc[i][pred_labels].to_numpy()
+        # )
 
         # TODO: Brier score, using the argmax (one-hot encoding) [ that seems to be only valid if using binary predictor, single class ]
         # Update the Brier score, using the raw values. This is the MSE between the target and predicted labels
@@ -112,12 +111,12 @@ def main(args=None):
 
     # Normalize the confusion matrices
     confusion_matrix = confusion_matrix / confusion_matrix.sum(axis=1)[:, np.newaxis]
-    confusion_matrix_raw = (
-        confusion_matrix_raw / confusion_matrix_raw.sum(axis=1)[:, np.newaxis]
-    )
+    # confusion_matrix_raw = (
+    #     confusion_matrix_raw / confusion_matrix_raw.sum(axis=1)[:, np.newaxis]
+    # )
     # Print the content of the confusion matrix
     print(confusion_matrix)
-    print(confusion_matrix_raw)
+    # print(confusion_matrix_raw)
     brier_score_onehot /= num_samples
     brier_score_raw /= num_samples
     # Print the Brier score
