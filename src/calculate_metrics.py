@@ -93,20 +93,18 @@ def main(args=None):
     # Iterate over the samples
     for i in range(num_samples):
         # Get the target label, in one-hot encoding
-        target_label = df.iloc[i][target_labels].to_numpy().argmax()
+        target_label_index = df.iloc[i][target_labels].to_numpy().argmax()
         # Get the predicted label, in one-hot encoding
-        pred_label = df.iloc[i][pred_labels].to_numpy().argmax()
+        pred_label_index = df.iloc[i][pred_labels].to_numpy().argmax()
         # Update the confusion matrix
-        confusion_matrix[target_label, pred_label] += 1
+        confusion_matrix[target_label_index, pred_label_index] += 1
 
         # Update the confusion matrix, using the raw values
         confusion_matrix_raw += np.outer(
             df.iloc[i][target_labels].to_numpy(), df.iloc[i][pred_labels].to_numpy()
         )
 
-        # Update the Brier score, using the argmax (one-hot encoding).
-        # Error will be 0 if the target and predicted labels are the same or 1 if they are different
-        brier_score_onehot += (target_label - pred_label) ** 2
+        # TODO: Brier score, using the argmax (one-hot encoding) [ that seems to be only valid if using binary predictor, single class ]
         # Update the Brier score, using the raw values. This is the MSE between the target and predicted labels
         brier_score_raw += (
             df.iloc[i][target_labels].to_numpy() - df.iloc[i][pred_labels].to_numpy()
@@ -123,14 +121,33 @@ def main(args=None):
     brier_score_onehot /= num_samples
     brier_score_raw /= num_samples
     # Print the Brier score
-    print("Brier score (one-hot): ", brier_score_onehot)
     print("Brier score (raw-MSE): ", brier_score_raw)
 
     # Calculate the accuracy for each class
     accuracy = np.diag(confusion_matrix)
+    # Calculate the recall for each class
+    recall = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=1)
+    # Calculate the precision for each class
+    precision = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0)
+    # From teh recall and precision, calculate the F1 score
+    f1 = 2 * (precision * recall) / (precision + recall)
+    # calculate the class frequency
+    class_frequency = np.sum(confusion_matrix, axis=1) / np.sum(confusion_matrix)
+    # calculate the weighted accuracy
+    weighted_accuracy = np.sum(accuracy * class_frequency)
+    # calculate the weighted F1 score (micro)
+    weighted_f1 = np.sum(f1 * class_frequency)
+
     # Print the accuracy for each class
     for i in range(num_classes):
         print("Accuracy for class {}: {:.2f}".format(i, accuracy[i]))
+        # Print the recall for each class
+        # print("Recall for class {}: {:.2f}".format(i, recall[i]))
+        # Print the precision for each class
+        # print("Precision for class {}: {:.2f}".format(i, precision[i]))
+        # Print the F1 score for each class
+        print("F1 score for class {}: {:.2f}".format(i, f1[i]))
+        print("micro F1 score: {:.2f}".format(weighted_f1))
 
     # Generate a figure to plot the confusion matrix
     fig = plt.figure()
