@@ -43,6 +43,14 @@ def main(args=None):
         default="pred_",
         help="Prefix for the predicted labels (predictions)",
     )
+    # Add option to define predicted labels, default pred_
+    parser.add_argument(
+        "--uncert",
+        "-u",
+        type=str,
+        default="uncertainty_",
+        help="Prefix for the uncertainty of predictions",
+    )
     # Add flag to indicate if we want to show the plot
     parser.add_argument(
         "--show",
@@ -76,11 +84,16 @@ def main(args=None):
 
     # Get the target labels
     target_labels = [col for col in df.columns if col.startswith(args.target)]
+    # From the target labels, get the class names. They are the labels after the last underscore _
+    class_names = [label.split("_")[-1] for label in target_labels]
     # Get the predicted labels
     pred_labels = [col for col in df.columns if col.startswith(args.pred)]
+    # Get the predicted labels
+    uncert_labels = [col for col in df.columns if col.startswith(args.uncert)]
     # Get the number of classes
     num_classes = len(target_labels)
     print("Number of classes: ", num_classes)
+    print("Class names: ", class_names)
     # Get the number of samples
     num_samples = len(df)
     print("Number of samples (rows): ", num_samples)
@@ -96,6 +109,7 @@ def main(args=None):
     # We have one Brier score for one-hot (argmax) encoding and one for the raw values
     # brier_score_onehot = 0.0
     brier_score_raw = 0.0
+    uncertainty = 0.0
 
     # Iterate over the samples
     for i in range(num_samples):
@@ -105,22 +119,23 @@ def main(args=None):
         # Update the confusion matrix
         confusion_matrix[target_label_index, pred_label_index] += 1
 
-        # Update the confusion matrix, using the raw values
-        # confusion_matrix_raw += np.outer(
-        #     df.iloc[i][target_labels].to_numpy(), df.iloc[i][pred_labels].to_numpy()
-        # )
-
         # TODO: Brier score, using the argmax (one-hot encoding) [ that seems to be only valid if using binary predictor, single class ]
         # Update the Brier score, using the raw values. This is the MSE between the target and predicted labels
         brier_score_raw += (
             df.iloc[i][target_labels].to_numpy() - df.iloc[i][pred_labels].to_numpy()
         ) ** 2
 
+        # Accumulate the uncertainty
+        uncertainty += df.iloc[i][uncert_labels].to_numpy()
+
     print("Confusion matrix:")
     print(confusion_matrix)
     # Print the Brier score
     brier_score_raw /= num_samples
-    print("Brier score (raw-MSE): ", brier_score_raw)
+    print("Brier score (raw-MSE):\t\t", brier_score_raw)
+    # Normalize and then print the uncertainty
+    uncertainty /= num_samples
+    print("Uncertainty:\t\t", uncertainty)
 
     # Calculate each component TP, TN, FP, FN
     TP = np.diag(confusion_matrix)
@@ -131,7 +146,7 @@ def main(args=None):
     # Normalize the confusion matrices (normalizing before or after calculating the components does not change the results)
     confusion_matrix = confusion_matrix / confusion_matrix.sum(axis=1)[:, np.newaxis]
     mcc = (TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))
-    print("MCC: ", mcc)    
+    print("MCC:\t\t", mcc)    
 
     # Calculate the accuracy for each class from the confusion matrix
     accuracy = np.diag(confusion_matrix)
@@ -139,7 +154,7 @@ def main(args=None):
     recall = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=1)
     # Calculate the precision for each class
     precision = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0)
-    print("Precision: ", precision)
+    # print("Precision:\t\t", precision)
     # From teh recall and precision, calculate the F1 score
     f1 = 2 * (precision * recall) / (precision + recall)
     # calculate the class frequency
@@ -151,10 +166,9 @@ def main(args=None):
     # Calculate the Matthews Correlation Coefficient (MCC)
     # MCC = (TP * TN - FP * FN) / sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))
 
-    
     # Print the accuracy for each class
     for i in range(num_classes):
-        print("Accuracy for class {}: {:.2f}".format(i, accuracy[i]))
+        print("Accuracy for class ", class_names[i], ":\t", accuracy[i])
 
     print("F1 score for ALL classes: ", f1)
     print("micro F1 score: {:.2f}".format(weighted_f1))
@@ -187,9 +201,9 @@ def main(args=None):
         cax.set_clim(0.0, 1.0)
 
         # Set the labels for the x-axis
-        ax.set_xticklabels([""] + pred_labels)
+        ax.set_xticklabels([""] + "pred_" + class_names)
         # Set the labels for the y-axis
-        ax.set_yticklabels([""] + target_labels)
+        ax.set_yticklabels([""] + "target_" + class_names)
         # Rotate the labels for the x-axis
         plt.setp(ax.get_xticklabels(), rotation=45, ha="left", rotation_mode="anchor")
         # Set the title
@@ -245,18 +259,21 @@ def main(args=None):
     df_scores.columns = ["input_file", "mF1"]
 
     for i in range(num_classes):
-        df_scores["F1_" + str(i)] = f1[i]
+        df_scores["F1_" + class_names[i]] = f1[i]
 
     for i in range(num_classes):
-        df_scores["MCC_" + str(i)] = mcc[i]
+        df_scores["MCC_" + class_names[i]] = mcc[i]
 
     # Add the Brier MSE raw value (each element is an individual column of the dataframe)
     for i in range(num_classes):
-        df_scores["brier_mse_" + str(i)] = brier_score_raw[i]
+        df_scores["brier_mse_" + class_names[i]] = brier_score_raw[i]
+
+    for i in range(num_classes):
+        df_scores["uncertainty_" + class_names[i]] = uncertainty[i]
 
     # Add the accuracy (each element is an individual column of the dataframe)
     for i in range(num_classes):
-        df_scores["accuracy_" + str(i)] = accuracy[i]
+        df_scores["accuracy_" + class_names[i]] = accuracy[i]
 
     # Save the dataframe to CSV
     df_scores.to_csv(output_file + "_scores.csv")
