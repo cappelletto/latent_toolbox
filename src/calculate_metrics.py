@@ -116,6 +116,8 @@ def main(args=None):
             df.iloc[i][target_labels].to_numpy() - df.iloc[i][pred_labels].to_numpy()
         ) ** 2
 
+    print ("Before normalization")
+    print (confusion_matrix)
     # Normalize the confusion matrices
     confusion_matrix = confusion_matrix / confusion_matrix.sum(axis=1)[:, np.newaxis]
     # confusion_matrix_raw = (
@@ -133,6 +135,7 @@ def main(args=None):
     recall = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=1)
     # Calculate the precision for each class
     precision = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0)
+    print ("Precision: ", precision)
     # From teh recall and precision, calculate the F1 score
     f1 = 2 * (precision * recall) / (precision + recall)
     # calculate the class frequency
@@ -182,9 +185,9 @@ def main(args=None):
         cax.set_clim(0.0, 1.0)
 
         # Set the labels for the x-axis
-        ax.set_xticklabels([""] + target_labels)
+        ax.set_xticklabels([""] + pred_labels)
         # Set the labels for the y-axis
-        ax.set_yticklabels([""] + pred_labels)
+        ax.set_yticklabels([""] + target_labels)
         # Rotate the labels for the x-axis
         plt.setp(ax.get_xticklabels(), rotation=45, ha="left", rotation_mode="anchor")
         # Set the title
