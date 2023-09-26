@@ -43,7 +43,6 @@ append_utm = "append_utm:main"
 # Add plotting tools (plot_latents)
 # Add plot_afe_train results
 
-# Finish integration for
-# Modules:
+# Integrate modules:
 # utm_generator // plot_latents.m >> needs a [main] module and cli compatible API       [WIP]
 # plot_train_lga // to improve for consumption of general types of model training

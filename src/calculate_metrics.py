@@ -139,14 +139,16 @@ def main(args=None):
 
     # Calculate each component TP, TN, FP, FN
     TP = np.diag(confusion_matrix)
-    TN = np.sum(confusion_matrix) - (np.sum(confusion_matrix, axis=0) + np.sum(confusion_matrix, axis=1) - TP)
+    TN = np.sum(confusion_matrix) - (
+        np.sum(confusion_matrix, axis=0) + np.sum(confusion_matrix, axis=1) - TP
+    )
     FP = np.sum(confusion_matrix, axis=0) - TP
     FN = np.sum(confusion_matrix, axis=1) - TP
 
     # Normalize the confusion matrices (normalizing before or after calculating the components does not change the results)
     confusion_matrix = confusion_matrix / confusion_matrix.sum(axis=1)[:, np.newaxis]
     mcc = (TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))
-    print("MCC:\t\t", mcc)    
+    print("MCC:\t\t", mcc)
 
     # Calculate the accuracy for each class from the confusion matrix
     accuracy = np.diag(confusion_matrix)
