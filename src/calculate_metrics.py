@@ -195,15 +195,19 @@ def main(args=None):
         ax = fig.add_subplot(111)
         # Plot the confusion matrix
         cax = ax.matshow(confusion_matrix, cmap=plt.cm.inferno)
+        # Print the confusion matrix values in the plot
+        for (i, j), z in np.ndenumerate(confusion_matrix):
+            ax.text(j, i, "{:0.2f}".format(z), ha="center", va="center", color="white")
+
         # set the colorbar, and the ticks values every 0.25
         fig.colorbar(cax, ticks=[0, 0.25, 0.5, 0.75, 1])
         # set the colorbar limits to 0.0 and 1.0
         cax.set_clim(0.0, 1.0)
 
         # Set the labels for the x-axis
-        ax.set_xticklabels([""] + "pred_" + class_names)
+        ax.set_xticklabels(["pred_"] + class_names)
         # Set the labels for the y-axis
-        ax.set_yticklabels([""] + "target_" + class_names)
+        ax.set_yticklabels(["target_"] + class_names)
         # Rotate the labels for the x-axis
         plt.setp(ax.get_xticklabels(), rotation=45, ha="left", rotation_mode="anchor")
         # Set the title
@@ -267,9 +271,12 @@ def main(args=None):
     # Add the Brier MSE raw value (each element is an individual column of the dataframe)
     for i in range(num_classes):
         df_scores["brier_mse_" + class_names[i]] = brier_score_raw[i]
+    df_scores["brier_mse"] = brier_score_raw.mean()
 
+    # Insert uncertainties per class, and mean uncertainty
     for i in range(num_classes):
         df_scores["uncertainty_" + class_names[i]] = uncertainty[i]
+    df_scores["mean_uncertainty"] = uncertainty.mean()
 
     # Add the accuracy (each element is an individual column of the dataframe)
     for i in range(num_classes):
