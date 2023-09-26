@@ -14,17 +14,14 @@ authors = [ {name = "Jose Cappelletto", email = "j.cappelletto@soton.ac.uk" } ]
 description = "A toolbox for manipulation, sampling and visualization of latent representations of georefereced data."
 readme = "README.md"
 # license = [{text = "GPLv3", file = "LICENSE"}]
-keywords = ["latent, georeferenced, data, visualization, sampling, manipulation"]
+keywords = [
+    "latent, georeferenced, data, visualization, sampling, manipulation",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-    "pandas",
-    "numpy",
-    "matplotlib",
-    "pyproj",
-]
+dependencies = ["pandas", "numpy", "matplotlib", "pyproj"]
 
 # setuptools related information (package location for our src-layout)
 [tools.setuptools.find_packages]
@@ -46,9 +43,6 @@ calculate_metrics = "calculate_metrics:main"
 
 # Finish integration for
 # Modules:
-# confusion_matrix.py
-# latent_toolbox (git)
-# utm_generator // plot_latents.m
-# plot_train_lga
-# latents2csv
 
+# utm_generator // plot_latents.m >> needs a [main] module and cli compatible API
+# plot_train_lga // to improve for consumption of general types of model training

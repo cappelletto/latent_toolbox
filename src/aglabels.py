@@ -2,6 +2,12 @@ import pandas as pd
 import argparse
 
 
+# Module that aggregates the ground truth or predicted labels from a 1-N mapping CSV
+# The content of the labels are expected to be already available in one-hot-encoding format but no normalization is required nor enforced
+# The rest of the fields (columns) are assumed to be repreated copies of the same content, so we use the first unique entry for such set
+# Sets are defined as collection of rows sharing the same UUID (unique identifier)
+
+
 def aggregate_labels(input_file, output_file, labels_column, uuid_column):
     # Load the CSV data into a DataFrame
     df = pd.read_csv(input_file)
@@ -69,15 +75,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Aggregate labels in a CSV file by UUID"
     )
-    parser.add_argument("--input", required=True, help="Input CSV file path")
-    parser.add_argument("--output", required=True, help="Output CSV file path")
     parser.add_argument(
-        "--labels", required=True, help="Name of the labels column (e.g., labels_)"
+        "--input", required=True, help="Input CSV file path [mandatory]"
+    )
+    parser.add_argument(
+        "--output", required=True, help="Output CSV file path [mandatory]"
+    )
+    parser.add_argument(
+        "--labels", required=True, help="Name of the labels column (e.g., labels_) that will be aggregated. They are expected to be numerical values"
     )
     parser.add_argument(
         "--uuid",
         required=True,
-        help="Name of unique identifier column (e.g., relative_path)",
+        help="Name of unique identifier column (e.g., relative_path, UUID). This key will be used to define the set of rows that will be aggregated into a single output row",
     )
     args = parser.parse_args()
 
