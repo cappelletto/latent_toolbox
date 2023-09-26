@@ -50,6 +50,13 @@ def main(args=None):
         action="store_true",
         help="Flag to indicate if we want to show the plot",
     )
+    # Add flag to indicate if we want to show the plot
+    parser.add_argument(
+        "--noplot",
+        "-n",
+        action="store_true",
+        help="Flag to disable generation and saving plots",
+    )
     args = parser.parse_args()
 
     # Read CSV file
@@ -93,7 +100,7 @@ def main(args=None):
     # Iterate over the samples
     for i in range(num_samples):
         target_label_index = df.iloc[i][target_labels].to_numpy().argmax()
-        # Get the predicted label, in one-hot encoding
+        # Get the predicted label, in one-hot encoding winner takes all reduction of predicted probabilities
         pred_label_index = df.iloc[i][pred_labels].to_numpy().argmax()
         # Update the confusion matrix
         confusion_matrix[target_label_index, pred_label_index] += 1
@@ -116,10 +123,8 @@ def main(args=None):
     # )
     # Print the content of the confusion matrix
     print(confusion_matrix)
-    # print(confusion_matrix_raw)
-    brier_score_onehot /= num_samples
-    brier_score_raw /= num_samples
     # Print the Brier score
+    brier_score_raw /= num_samples
     print("Brier score (raw-MSE): ", brier_score_raw)
 
     # Calculate the accuracy for each class
@@ -148,37 +153,6 @@ def main(args=None):
         print("F1 score for class {}: {:.2f}".format(i, f1[i]))
         print("micro F1 score: {:.2f}".format(weighted_f1))
 
-    # Generate a figure to plot the confusion matrix
-    fig = plt.figure()
-    # define the plot siz to be full width of the page
-    fig.set_size_inches(12, 8)
-    ax = fig.add_subplot(111)
-    # Plot the confusion matrix
-    cax = ax.matshow(confusion_matrix, cmap=plt.cm.inferno)
-    # set the colorbar, and the ticks values every 0.25
-    fig.colorbar(cax, ticks=[0, 0.25, 0.5, 0.75, 1])
-    # set the colorbar limits to 0.0 and 1.0
-    cax.set_clim(0.0, 1.0) 
-
-    # Set the labels for the x-axis
-    ax.set_xticklabels([""] + target_labels)
-    # Set the labels for the y-axis
-    ax.set_yticklabels([""] + pred_labels)
-    # Rotate the labels for the x-axis
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="left", rotation_mode="anchor")
-    # Set the title
-    # plt.title('Confusion matrix')
-    plt.title("Confusion matrix for " + filename)
-    # Add subtitle with the Brier scores
-    # plt.suptitle('Brier score (one-hot):' + str(brier_score_onehot) + '\n Brier score (raw): ' + str(brier_score_raw) + '\n Confusion matrix raw:' + str(confusion_matrix_raw))
-    # Set the x-axis label
-    plt.xlabel("Target")
-    # Set the y-axis label
-    plt.ylabel("Predicted")
-    # Check if we want to show the plot
-    if args.show:
-        plt.show()
-    # Save the figure
     # Output filename is optional, check if it was provided
     if args.output is None:
         # If not provided, then use the input filename with .png extension
@@ -193,12 +167,47 @@ def main(args=None):
     # print output file path
     print("Exporting to output file path (prefix): ", output_file)
 
-    # save as PNG
-    fig.savefig(output_file + ".png", bbox_inches="tight")
-    # save as SVG
-    fig.savefig(output_file + ".svg", bbox_inches="tight")
+    # Check if plotting is disabled
+    if args.noplot is not True:
+        # Generate a figure to plot the confusion matrix
+        fig = plt.figure()
+        # define the plot siz to be full width of the page
+        fig.set_size_inches(12, 8)
+        ax = fig.add_subplot(111)
+        # Plot the confusion matrix
+        cax = ax.matshow(confusion_matrix, cmap=plt.cm.inferno)
+        # set the colorbar, and the ticks values every 0.25
+        fig.colorbar(cax, ticks=[0, 0.25, 0.5, 0.75, 1])
+        # set the colorbar limits to 0.0 and 1.0
+        cax.set_clim(0.0, 1.0)
 
-    print("\n------------------------\nExporting confusion matrix and scores to CSV---------------------")
+        # Set the labels for the x-axis
+        ax.set_xticklabels([""] + target_labels)
+        # Set the labels for the y-axis
+        ax.set_yticklabels([""] + pred_labels)
+        # Rotate the labels for the x-axis
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="left", rotation_mode="anchor")
+        # Set the title
+        # plt.title('Confusion matrix')
+        plt.title("Confusion matrix for " + filename)
+        # Add subtitle with the Brier scores
+        # plt.suptitle('Brier score (one-hot):' + str(brier_score_onehot) + '\n Brier score (raw): ' + str(brier_score_raw) + '\n Confusion matrix raw:' + str(confusion_matrix_raw))
+        # Set the x-axis label
+        plt.xlabel("Target")
+        # Set the y-axis label
+        plt.ylabel("Predicted")
+        # Check if we want to show the plot
+        if args.show:
+            plt.show()
+        # Save the figure
+
+        # save as PNG
+        fig.savefig(output_file + ".png", bbox_inches="tight")
+        # save as SVG
+        fig.savefig(output_file + ".svg", bbox_inches="tight")
+
+    print("------------------------")
+    print("Exporting confusion matrix and scores to CSV")
     # Export the confusion matrix and the Brier score to CSV
     # Create a dataframe with the confusion matrix
     df_confusion_matrix = pd.DataFrame(confusion_matrix)
