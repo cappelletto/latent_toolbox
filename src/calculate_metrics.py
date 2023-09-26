@@ -94,7 +94,7 @@ def main(args=None):
 
     # We also want to calculate the Brier score (MSE between the target and predicted labels)
     # We have one Brier score for one-hot (argmax) encoding and one for the raw values
-    brier_score_onehot = 0.0
+    # brier_score_onehot = 0.0
     brier_score_raw = 0.0
 
     # Iterate over the samples
@@ -116,26 +116,30 @@ def main(args=None):
             df.iloc[i][target_labels].to_numpy() - df.iloc[i][pred_labels].to_numpy()
         ) ** 2
 
-    print ("Before normalization")
-    print (confusion_matrix)
-    # Normalize the confusion matrices
-    confusion_matrix = confusion_matrix / confusion_matrix.sum(axis=1)[:, np.newaxis]
-    # confusion_matrix_raw = (
-    #     confusion_matrix_raw / confusion_matrix_raw.sum(axis=1)[:, np.newaxis]
-    # )
-    # Print the content of the confusion matrix
+    print("Confusion matrix:")
     print(confusion_matrix)
     # Print the Brier score
     brier_score_raw /= num_samples
     print("Brier score (raw-MSE): ", brier_score_raw)
 
-    # Calculate the accuracy for each class
+    # Calculate each component TP, TN, FP, FN
+    TP = np.diag(confusion_matrix)
+    TN = np.sum(confusion_matrix) - (np.sum(confusion_matrix, axis=0) + np.sum(confusion_matrix, axis=1) - TP)
+    FP = np.sum(confusion_matrix, axis=0) - TP
+    FN = np.sum(confusion_matrix, axis=1) - TP
+
+    # Normalize the confusion matrices (normalizing before or after calculating the components does not change the results)
+    confusion_matrix = confusion_matrix / confusion_matrix.sum(axis=1)[:, np.newaxis]
+    mcc = (TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))
+    print("MCC: ", mcc)    
+
+    # Calculate the accuracy for each class from the confusion matrix
     accuracy = np.diag(confusion_matrix)
     # Calculate the recall for each class
     recall = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=1)
     # Calculate the precision for each class
     precision = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0)
-    print ("Precision: ", precision)
+    print("Precision: ", precision)
     # From teh recall and precision, calculate the F1 score
     f1 = 2 * (precision * recall) / (precision + recall)
     # calculate the class frequency
@@ -144,18 +148,16 @@ def main(args=None):
     weighted_accuracy = np.sum(accuracy * class_frequency)
     # calculate the weighted F1 score (micro)
     weighted_f1 = np.sum(f1 * class_frequency)
+    # Calculate the Matthews Correlation Coefficient (MCC)
+    # MCC = (TP * TN - FP * FN) / sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))
 
+    
     # Print the accuracy for each class
     for i in range(num_classes):
         print("Accuracy for class {}: {:.2f}".format(i, accuracy[i]))
-        # Print the recall for each class
-        # print("Recall for class {}: {:.2f}".format(i, recall[i]))
-        # Print the precision for each class
-        # print("Precision for class {}: {:.2f}".format(i, precision[i]))
-        # Print the F1 score for each class
-        print("F1 score for class {}: {:.2f}".format(i, f1[i]))
-        print("micro F1 score: {:.2f}".format(weighted_f1))
 
+    print("F1 score for ALL classes: ", f1)
+    print("micro F1 score: {:.2f}".format(weighted_f1))
     # Output filename is optional, check if it was provided
     if args.output is None:
         # If not provided, then use the input filename with .png extension
@@ -237,18 +239,24 @@ def main(args=None):
     # Create a dataframe with the input filename and the Brier score one-shot. The Brier score raw is a vector, we need to add each element as a column
 
     # Create the output dataframe, appending as columns the input filename and the Brier score one-hot
-    df_scores = pd.DataFrame([[input_file, brier_score_onehot]])
+    df_scores = pd.DataFrame([[input_file, weighted_f1]])
 
     # Add the target labels as columns
-    df_scores.columns = ["input_file", "brier_score_onehot"]
+    df_scores.columns = ["input_file", "mF1"]
+
+    for i in range(num_classes):
+        df_scores["F1_" + str(i)] = f1[i]
+
+    for i in range(num_classes):
+        df_scores["MCC_" + str(i)] = mcc[i]
 
     # Add the Brier MSE raw value (each element is an individual column of the dataframe)
     for i in range(num_classes):
-        df_scores["brier_mse_raw_" + target_labels[i]] = brier_score_raw[i]
+        df_scores["brier_mse_" + str(i)] = brier_score_raw[i]
 
     # Add the accuracy (each element is an individual column of the dataframe)
     for i in range(num_classes):
-        df_scores["accuracy_" + target_labels[i]] = accuracy[i]
+        df_scores["accuracy_" + str(i)] = accuracy[i]
 
     # Save the dataframe to CSV
     df_scores.to_csv(output_file + "_scores.csv")
